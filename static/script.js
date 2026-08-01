@@ -1,114 +1,108 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const taskForm = document.getElementById("taskForm");
+  const form = document.getElementById("actionTaskForm");
   const taskTitle = document.getElementById("taskTitle");
-  const taskPriority = document.getElementById("taskPriority");
+  const taskUrl = document.getElementById("taskUrl");
+  const taskDuration = document.getElementById("taskDuration");
   const taskCategory = document.getElementById("taskCategory");
-  const taskDueDate = document.getElementById("taskDueDate");
   const taskList = document.getElementById("taskList");
-  const clearAllBtn = document.getElementById("clearAllBtn");
 
-  const statTotal = document.getElementById("statTotal");
-  const statPending = document.getElementById("statPending");
-  const statCompleted = document.getElementById("statCompleted");
+  const focusSoundBtn = document.getElementById("focusSoundBtn");
+  const audioPlayer = document.getElementById("audioPlayer");
+  let isPlaying = false;
 
-  let tasks = JSON.parse(localStorage.getItem("proTasks")) || [];
+  let tasks = JSON.parse(localStorage.getItem("executionTasks")) || [];
 
-  function updateStats() {
-    const total = tasks.length;
-    const completed = tasks.filter((t) => t.completed).length;
-    const pending = total - completed;
-
-    statTotal.textContent = total;
-    statCompleted.textContent = completed;
-    statPending.textContent = pending;
-  }
+  // Toggle Focus Audio
+  focusSoundBtn.addEventListener("click", () => {
+    if (isPlaying) {
+      audioPlayer.pause();
+      focusSoundBtn.classList.replace("btn-light", "btn-outline-light");
+      focusSoundBtn.innerHTML = `<i class="fa-solid fa-headphones me-1"></i> Toggle Focus Audio`;
+    } else {
+      audioPlayer.play();
+      focusSoundBtn.classList.replace("btn-outline-light", "btn-light");
+      focusSoundBtn.innerHTML = `<i class="fa-solid fa-volume-high me-1"></i> Pause Audio`;
+    }
+    isPlaying = !isPlaying;
+  });
 
   function saveAndRender() {
-    localStorage.setItem("proTasks", JSON.stringify(tasks));
-    renderTasks();
-    updateStats();
+    localStorage.setItem("executionTasks", JSON.stringify(tasks));
+    render();
   }
 
-  function renderTasks() {
+  function render() {
     taskList.innerHTML = "";
 
     if (tasks.length === 0) {
-      taskList.innerHTML = `<li class="text-center text-muted py-4">No tasks added yet!</li>`;
+      taskList.innerHTML = `<p class="text-muted text-center py-4">No tasks configured. Add one above!</p>`;
       return;
     }
 
-    tasks.forEach((task, index) => {
-      const li = document.createElement("li");
-      li.className = `list-group-item d-flex align-items-center justify-content-between task-item ${
-        task.completed ? "task-completed" : ""
-      }`;
+    tasks.forEach((t, index) => {
+      const card = document.createElement("div");
+      card.className = "card mb-3 border-0 bg-white shadow-sm p-3";
 
-      const priorityBadgeClass =
-        task.priority === "High"
-          ? "badge-high"
-          : task.priority === "Medium"
-          ? "badge-medium"
-          : "badge-low";
-
-      li.innerHTML = `
-        <div class="d-flex align-items-center gap-3">
-          <input type="checkbox" class="form-check-input mt-0" ${
-            task.completed ? "checked" : ""
-          } onchange="toggleTask(${index})" />
-          <div>
-            <span class="fw-semibold task-text">${escapeHtml(task.title)}</span>
-            <div class="small text-muted mt-1">
-              <span class="badge ${priorityBadgeClass} me-1">${task.priority}</span>
-              <span class="badge bg-secondary me-1">${task.category}</span>
-              ${
-                task.dueDate
-                  ? `<span><i class="fa-regular fa-calendar me-1"></i>${task.dueDate}</span>`
-                  : ""
-              }
-            </div>
-          </div>
+      card.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="fw-bold mb-0">${escapeHtml(t.title)}</h6>
+          <span class="badge bg-primary">${t.category}</span>
         </div>
-        <button class="btn btn-outline-danger btn-sm border-0" onclick="deleteTask(${index})">
-          <i class="fa-solid fa-trash-can"></i>
-        </button>
+        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mt-2">
+          <a href="${t.url}" target="_blank" class="btn btn-primary btn-sm fw-bold">
+            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Execute Task (Launch Site)
+          </a>
+          <button class="btn btn-outline-dark btn-sm" onclick="startTimer(${index}, this)">
+            <i class="fa-solid fa-stopwatch me-1"></i> Start ${t.duration}m Focus Timer
+          </button>
+          <button class="btn btn-outline-danger btn-sm border-0" onclick="deleteTask(${index})">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+        <div id="timerDisplay-${index}" class="mt-2 text-primary fw-bold small"></div>
       `;
 
-      taskList.appendChild(li);
+      taskList.appendChild(card);
     });
   }
 
-  taskForm.addEventListener("submit", (e) => {
+  form.addEventListener("submit", (e) => {
     e.preventDefault();
-    const newTask = {
-      title: taskTitle.value.trim(),
-      priority: taskPriority.value,
+    tasks.push({
+      title: taskTitle.value,
+      url: taskUrl.value,
+      duration: taskDuration.value,
       category: taskCategory.value,
-      dueDate: taskDueDate.value,
-      completed: false,
-    };
-
-    tasks.push(newTask);
+    });
     taskTitle.value = "";
-    taskDueDate.value = "";
+    taskUrl.value = "";
     saveAndRender();
   });
 
-  window.toggleTask = (index) => {
-    tasks[index].completed = !tasks[index].completed;
+  window.deleteTask = (i) => {
+    tasks.splice(i, 1);
     saveAndRender();
   };
 
-  window.deleteTask = (index) => {
-    tasks.splice(index, 1);
-    saveAndRender();
-  };
+  window.startTimer = (i, btn) => {
+    let seconds = tasks[i].duration * 60;
+    btn.disabled = true;
+    const display = document.getElementById(`timerDisplay-${i}`);
 
-  clearAllBtn.addEventListener("click", () => {
-    if (confirm("Are you sure you want to clear all tasks?")) {
-      tasks = [];
-      saveAndRender();
-    }
-  });
+    const interval = setInterval(() => {
+      let mins = Math.floor(seconds / 60);
+      let secs = seconds % 60;
+      display.textContent = `⏱️ Active Work Session: ${mins}m ${secs < 10 ? "0" : ""}${secs}s remaining`;
+
+      if (seconds <= 0) {
+        clearInterval(interval);
+        display.textContent = "🎉 Session Complete! Take a break.";
+        alert(`Time is up for task: ${tasks[i].title}`);
+        btn.disabled = false;
+      }
+      seconds--;
+    }, 1000);
+  };
 
   function escapeHtml(text) {
     const div = document.createElement("div");
@@ -116,5 +110,5 @@ document.addEventListener("DOMContentLoaded", () => {
     return div.innerHTML;
   }
 
-  saveAndRender();
+  render();
 });
