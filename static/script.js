@@ -1,107 +1,94 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("actionTaskForm");
-  const taskTitle = document.getElementById("taskTitle");
-  const taskUrl = document.getElementById("taskUrl");
-  const taskDuration = document.getElementById("taskDuration");
-  const taskCategory = document.getElementById("taskCategory");
+  const form = document.getElementById("taskForm");
+  const titleInput = document.getElementById("taskTitle");
+  const priorityInput = document.getElementById("taskPriority");
+  const categoryInput = document.getElementById("taskCategory");
+  const linkInput = document.getElementById("taskLink");
   const taskList = document.getElementById("taskList");
 
-  const focusSoundBtn = document.getElementById("focusSoundBtn");
-  const audioPlayer = document.getElementById("audioPlayer");
-  let isPlaying = false;
+  const totalCount = document.getElementById("totalCount");
+  const pendingCount = document.getElementById("pendingCount");
+  const completedCount = document.getElementById("completedCount");
 
-  let tasks = JSON.parse(localStorage.getItem("executionTasks")) || [];
-
-  // Toggle Focus Audio
-  focusSoundBtn.addEventListener("click", () => {
-    if (isPlaying) {
-      audioPlayer.pause();
-      focusSoundBtn.classList.replace("btn-light", "btn-outline-light");
-      focusSoundBtn.innerHTML = `<i class="fa-solid fa-headphones me-1"></i> Toggle Focus Audio`;
-    } else {
-      audioPlayer.play();
-      focusSoundBtn.classList.replace("btn-outline-light", "btn-light");
-      focusSoundBtn.innerHTML = `<i class="fa-solid fa-volume-high me-1"></i> Pause Audio`;
-    }
-    isPlaying = !isPlaying;
-  });
+  let tasks = JSON.parse(localStorage.getItem("tasksData")) || [];
 
   function saveAndRender() {
-    localStorage.setItem("executionTasks", JSON.stringify(tasks));
+    localStorage.setItem("tasksData", JSON.stringify(tasks));
     render();
   }
 
   function render() {
     taskList.innerHTML = "";
 
+    let total = tasks.length;
+    let completed = tasks.filter(t => t.completed).length;
+    let pending = total - completed;
+
+    totalCount.textContent = total;
+    pendingCount.textContent = pending;
+    completedCount.textContent = completed;
+
     if (tasks.length === 0) {
-      taskList.innerHTML = `<p class="text-muted text-center py-4">No tasks configured. Add one above!</p>`;
+      taskList.innerHTML = `<p class="text-muted text-center py-3">No tasks added yet.</p>`;
       return;
     }
 
     tasks.forEach((t, index) => {
-      const card = document.createElement("div");
-      card.className = "card mb-3 border-0 bg-white shadow-sm p-3";
+      const item = document.createElement("div");
+      item.className = `task-item d-flex justify-content-between align-items-center ${t.completed ? 'opacity-50' : ''}`;
 
-      card.innerHTML = `
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6 class="fw-bold mb-0">${escapeHtml(t.title)}</h6>
-          <span class="badge bg-primary">${t.category}</span>
+      let priorityClass = t.priority === 'High' ? 'badge-high' : t.priority === 'Medium' ? 'badge-medium' : 'badge-low';
+
+      item.innerHTML = `
+        <div class="d-flex align-items-center gap-3">
+          <input type="checkbox" class="form-check-input" ${t.completed ? 'checked' : ''} onchange="toggleTask(${index})">
+          <div>
+            <div class="fw-semibold ${t.completed ? 'text-decoration-line-through' : ''}">${escapeHtml(t.title)}</div>
+            <div class="mt-1">
+              <span class="badge ${priorityClass} me-1">${t.priority}</span>
+              <span class="badge badge-cat me-1">${t.category}</span>
+              ${t.link ? `<a href="${escapeHtml(t.link)}" target="_blank" class="small text-primary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open Link</a>` : ''}
+            </div>
+          </div>
         </div>
-        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mt-2">
-          <a href="${t.url}" target="_blank" class="btn btn-primary btn-sm fw-bold">
-            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Execute Task (Launch Site)
-          </a>
-          <button class="btn btn-outline-dark btn-sm" onclick="startTimer(${index}, this)">
-            <i class="fa-solid fa-stopwatch me-1"></i> Start ${t.duration}m Focus Timer
-          </button>
-          <button class="btn btn-outline-danger btn-sm border-0" onclick="deleteTask(${index})">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </div>
-        <div id="timerDisplay-${index}" class="mt-2 text-primary fw-bold small"></div>
+        <button class="btn btn-link text-danger p-0 ms-2" onclick="deleteTask(${index})">
+          <i class="fa-solid fa-trash"></i>
+        </button>
       `;
 
-      taskList.appendChild(card);
+      taskList.appendChild(item);
     });
   }
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     tasks.push({
-      title: taskTitle.value,
-      url: taskUrl.value,
-      duration: taskDuration.value,
-      category: taskCategory.value,
+      title: titleInput.value.trim(),
+      priority: priorityInput.value,
+      category: categoryInput.value,
+      link: linkInput.value.trim(),
+      completed: false
     });
-    taskTitle.value = "";
-    taskUrl.value = "";
+    titleInput.value = "";
+    linkInput.value = "";
     saveAndRender();
   });
+
+  window.toggleTask = (i) => {
+    tasks[i].completed = !tasks[i].completed;
+    saveAndRender();
+  };
 
   window.deleteTask = (i) => {
     tasks.splice(i, 1);
     saveAndRender();
   };
 
-  window.startTimer = (i, btn) => {
-    let seconds = tasks[i].duration * 60;
-    btn.disabled = true;
-    const display = document.getElementById(`timerDisplay-${i}`);
-
-    const interval = setInterval(() => {
-      let mins = Math.floor(seconds / 60);
-      let secs = seconds % 60;
-      display.textContent = `⏱️ Active Work Session: ${mins}m ${secs < 10 ? "0" : ""}${secs}s remaining`;
-
-      if (seconds <= 0) {
-        clearInterval(interval);
-        display.textContent = "🎉 Session Complete! Take a break.";
-        alert(`Time is up for task: ${tasks[i].title}`);
-        btn.disabled = false;
-      }
-      seconds--;
-    }, 1000);
+  window.clearAllTasks = () => {
+    if (confirm("Clear all tasks?")) {
+      tasks = [];
+      saveAndRender();
+    }
   };
 
   function escapeHtml(text) {
