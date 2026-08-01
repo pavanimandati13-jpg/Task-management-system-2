@@ -10,7 +10,40 @@
     body {
       background-color: #f8f9fa;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
     }
+
+    /* Landing Page Styling */
+    #landingPage {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 90vh;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .landing-icon {
+      font-size: 4rem;
+      color: #0d6efd;
+      margin-bottom: 20px;
+    }
+
+    .landing-card {
+      background: #ffffff;
+      padding: 40px 30px;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      max-width: 450px;
+      width: 100%;
+    }
+
+    /* Dashboard Styling */
+    #dashboardPage {
+      display: none; /* Hidden by default until clicked */
+    }
+
     .stat-card {
       background: #ffffff;
       border-radius: 12px;
@@ -50,8 +83,34 @@
 </head>
 <body class="py-4">
 
-  <div class="container" style="max-width: 500px;">
+  <!-- PAGE 1: LANDING / WELCOME PAGE -->
+  <div id="landingPage">
+    <div class="landing-card">
+      <div class="landing-icon">
+        <i class="fa-solid fa-list-check"></i>
+      </div>
+      <h2 class="fw-bold mb-3">Task Management System</h2>
+      <p class="text-muted mb-4">
+        Organize your work, track priorities, and stay productive every day.
+      </p>
+      <button class="btn btn-primary btn-lg w-100 py-3 fw-bold rounded-pill" onclick="openDashboard()">
+        Get Started <i class="fa-solid fa-arrow-right ms-2"></i>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- PAGE 2: TASK MANAGEMENT DASHBOARD -->
+  <div id="dashboardPage" class="container" style="max-width: 500px;">
     
+    <!-- Header with Back Button -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="openLanding()">
+        <i class="fa-solid fa-arrow-left me-1"></i> Home
+      </button>
+      <h6 class="fw-bold mb-0 text-muted">Task Dashboard</h6>
+    </div>
+
     <!-- Top Stats Counter Cards -->
     <div class="row g-2 mb-4">
       <div class="col-4">
@@ -113,6 +172,17 @@
 
   </div>
 
+  <script>
+    function openDashboard() {
+      document.getElementById('landingPage').style.display = 'none';
+      document.getElementById('dashboardPage').style.display = 'block';
+    }
+
+    function openLanding() {
+      document.getElementById('dashboardPage').style.display = 'none';
+      document.getElementById('landingPage').style.display = 'flex';
+    }
+  </script>
   <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
