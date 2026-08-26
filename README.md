@@ -49,7 +49,6 @@ Task-management-system-2/
 
 ⚙️ Installation and Setup
 1. Clone the Repository
-git clone https://github.com/pavan.../Task-management-system-2.git
 
 2. Navigate to the Project Directory
 cd Task-management-system-2
@@ -75,10 +74,6 @@ pip install -r requirements.txt
 5. Run the Application
 python app.py
 
-
-Open your browser and visit:
-
-http://127.0.0.1:5000/
 
 🌐 Deployment
 
